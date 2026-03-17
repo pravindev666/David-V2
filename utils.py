@@ -9,24 +9,31 @@ import os
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMPATIBILITY PATCH (sklearn 1.6+ vs LightGBM)
 # ═══════════════════════════════════════════════════════════════════════════════
+import sklearn
 import sklearn.utils.validation
+from packaging import version
+
 _original_check_X_y = sklearn.utils.validation.check_X_y
-
-def _patched_check_X_y(X, y, **kwargs):
-    if "force_all_finite" in kwargs:
-        kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
-    return _original_check_X_y(X, y, **kwargs)
-
-sklearn.utils.validation.check_X_y = _patched_check_X_y
-
 _original_check_array = sklearn.utils.validation.check_array
 
-def _patched_check_array(array, **kwargs):
-    if "force_all_finite" in kwargs:
-        kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
-    return _original_check_array(array, **kwargs)
+# Only patch if sklearn version is 1.6 or higher
+if version.parse(sklearn.__version__) >= version.parse("1.6.0"):
+    def _patched_check_X_y(X, y, **kwargs):
+        if "force_all_finite" in kwargs:
+            kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
+        return _original_check_X_y(X, y, **kwargs)
 
-sklearn.utils.validation.check_array = _patched_check_array
+    def _patched_check_array(array, **kwargs):
+        if "force_all_finite" in kwargs:
+            kwargs["ensure_all_finite"] = kwargs.pop("force_all_finite")
+        return _original_check_array(array, **kwargs)
+
+    sklearn.utils.validation.check_X_y = _patched_check_X_y
+    sklearn.utils.validation.check_array = _patched_check_array
+else:
+    # On older versions, LightGBM might need the reverse or no patch at all.
+    # We stay with original unless we see the "force_all_finite" error later.
+    pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
