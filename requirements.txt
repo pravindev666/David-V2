@@ -7,5 +7,5 @@ lightgbm
 catboost
 hmmlearn
 scipy
-streamlit
+streamlit>=1.45.0
 packaging
